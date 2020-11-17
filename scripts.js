@@ -12,6 +12,7 @@ let $uvIndex = $('#uvIndex');
 
 //Open Weather API Key
 const apiKey = "12a86102d69b851ad68961e1b9b10e46";
+let savedSearchTerm = [];
 
 
 function createForecastCard(date, weatherIconCode, temperature, humidity) {
@@ -29,6 +30,29 @@ function createForecastCard(date, weatherIconCode, temperature, humidity) {
 
 function handleSearch() {
     let searchTerm = $search.val();
+
+    if(searchTerm) {
+        searchForCity(searchTerm);
+        if(!savedSearchTerm.includes(searchTerm)) {
+            $history.prepend($(`<li class="list-group-item">${searchTerm}</li>`));
+            savedSearchTerm.unshift(searchTerm);
+            localStorage.setItem('searchHistory', JSON.stringify(savedSearchTerm));
+        }
+    }
+}
+
+/**
+ * load history search and display it
+ */
+function loadSavedSearchTerm() {
+    $history.empty();
+    let temp = localStorage.getItem('searchHistory');
+    if(temp) {
+        savedSearchTerm = JSON.parse(temp);
+    }
+    for(let history of savedSearchTerm) {
+        $history.append($(`<li class="list-group-item">${history}</li>`));
+    }
 }
 
 /**
@@ -69,7 +93,6 @@ function getForecast(coordinates, cityName) {
         url: url,
         method: "GET"
     }).done((response) => {
-        console.log(response);
         //display current data
         $cityName.text(cityName + "(" + getDate(response.current.dt) + ")");
         $temperature.text(kelvinToFahrenheit(response.current.temp));
@@ -100,5 +123,10 @@ function getDate(dt) {
 //handles the searches
 $search.change(handleSearch);
 $searchBtn.click(handleSearch);
+$history.click('li', function (event) {
+    let text = $(event.target).text();
+    $search.val(text);
+});
 
+loadSavedSearchTerm();
 searchForCity('Houston');
